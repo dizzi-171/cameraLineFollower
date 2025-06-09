@@ -56,8 +56,10 @@ def detectar_quadrantes(frame):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     dark_threshold = 100
 
-    left = 0
-    right = 0
+    left = ""
+    right = ""
+    false = ""
+    msg = ""
 
     for contour in contours:
         if cv2.contourArea(contour) < 100:
@@ -112,20 +114,14 @@ def detectar_quadrantes(frame):
 
         chosen_quadrant = max(dark_counts, key=dark_counts.get)
 
-        
         # Definindo mensagem a exibir
-        msg = ""
         if chosen_quadrant.endswith("-y)"):
-            msg = "False green"
+            false += chosen_quadrant
         else:  # +y
             if chosen_quadrant.startswith("(-x"):
-                msg = (f"right {chosen_quadrant}")
                 right = chosen_quadrant
             else:
-                msg = (f"left{chosen_quadrant}")
-                left = chosen_quadrant
- 
-            
+                left = chosen_quadrant            
 
         cv2.drawContours(frame, [ordered_box], 0, (0, 0, 255), 2)
         draw_quadrant_lines_and_labels(frame, box)
@@ -135,7 +131,17 @@ def detectar_quadrantes(frame):
 
     if left and right:
         msg = (f"Dois verdes: E{left} D{right}")
-        cv2.putText(frame,msg, (0,20), cv2.FONT_HERSHEY_SIMPLEX,0.4,(0,255,0), 1, cv2.LINE_AA)
+    elif left:
+        msg = (f"Um verde: E{left}")
+    elif right:
+        msg = (f"Um verde: D{right}")
+    elif false == "":
+        msg = "Nenhum verde detectado"
+    if false:
+        msg += f"Falso: {false}"
+    
+    cv2.putText(frame,msg, (0,20), cv2.FONT_HERSHEY_SIMPLEX,0.4,(0,255,0), 1, cv2.LINE_AA)
+        
     return frame
 
 # Captura da câmera
