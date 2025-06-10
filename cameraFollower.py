@@ -1,10 +1,12 @@
 import cv2
 import numpy as np
 
+
 def expand_box(box, scale=1.6):
     center = np.mean(box, axis=0)
     expanded = (box - center) * scale + center
     return np.intp(expanded)
+
 
 def order_box_points(pts):
     rect = np.zeros((4, 2), dtype="float32")
@@ -44,11 +46,11 @@ def draw_quadrant_lines_and_labels(frame, box):
     return rect
 
 def detectar_quadrantes(frame):
-    frame = cv2.resize(frame, (320, 240))
+    frame = cv2.resize(frame, (width, height))
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    lower_green = np.array([40, 60, 60])
-    upper_green = np.array([80, 255, 255])
+    lower_green = np.array([40, 70, 70])
+    upper_green = np.array([120, 255, 255])
     mask_green = cv2.inRange(hsv, lower_green, upper_green)
 
     contours, _ = cv2.findContours(mask_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -60,6 +62,7 @@ def detectar_quadrantes(frame):
     right = ""
     false = ""
     msg = ""
+    chosens_quadrants = []
 
     for contour in contours:
         if cv2.contourArea(contour) < 100:
@@ -82,6 +85,7 @@ def detectar_quadrantes(frame):
 
         cx = int(np.mean([p[0] for p in expanded_box]))
         cy = int(np.mean([p[1] for p in expanded_box]))
+        # print(cy)
 
         quadrants = {
             "(-x, +y)": np.zeros_like(mask_ring),
@@ -113,41 +117,49 @@ def detectar_quadrantes(frame):
             dark_counts[q] = percentage
 
         chosen_quadrant = max(dark_counts, key=dark_counts.get)
+        
+        if not chosen_quadrant.endswith("-y)") and cy > height // 2:
+            chosens_quadrants.append(chosen_quadrant)
+
+        msg = f"{chosens_quadrants}"
+        # cv2.putText(frame, msg, (320,240), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 1, cv2.LINE_AA)
 
         # Definindo mensagem a exibir
-        if chosen_quadrant.endswith("-y)"):
-            false += chosen_quadrant
-        else:  # +y
-            if chosen_quadrant.startswith("(-x"):
-                right = chosen_quadrant
-            else:
-                left = chosen_quadrant            
+        # if chosen_quadrant.endswith("-y)"):
+        #     false += chosen_quadrant
+        # else:  # +y
+        #     if chosen_quadrant.startswith("(-x"):
+        #         right = chosen_quadrant
+        #     else:
+        #         left = chosen_quadrant            
 
         cv2.drawContours(frame, [ordered_box], 0, (0, 0, 255), 2)
         draw_quadrant_lines_and_labels(frame, box)
         cx_text = int(np.mean(box[:, 0]))
         cy_text = int(np.mean(box[:, 1]))
-        cv2.putText(frame, msg, (cx_text - 30, cy_text), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(frame, msg, (cx_text - 30, cy_text), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (213, 26, 123), 1, cv2.LINE_AA)
 
-    if left and right:
-        msg = (f"Dois verdes: E{left} D{right}")
-    elif left:
-        msg = (f"Um verde: E{left}")
-    elif right:
-        msg = (f"Um verde: D{right}")
-    elif false == "":
-        msg = "Nenhum verde detectado"
-    if false:
-        msg += f"Falso: {false}"
+    # if left and right:
+    #     msg = (f"Dois verdes: E{left} D{right}")
+    # elif left:
+    #     msg = (f"Um verde: E{left}")
+    # elif right:
+    #     msg = (f"Um verde: D{right}")
+    # elif false == "":
+    #     msg = "Nenhum verde detectado"
+    # if false:
+    #     msg += f"Falso: {false}"
     
     cv2.putText(frame,msg, (0,20), cv2.FONT_HERSHEY_SIMPLEX,0.4,(0,255,0), 1, cv2.LINE_AA)
         
     return frame
 
 # Captura da câmera
-cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+cap = cv2.VideoCapture(1)
+width = 160
+height = 120
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
 while True:
     ret, frame = cap.read()
